@@ -1,0 +1,16 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="localhost.NFX_DW.sa 1"
+  DTS:DTSID="{A6402357-A5DE-4F0A-B23E-A0BF567BCB05}"
+  DTS:CreationName="OLEDB">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectRetryCount="1"
+      DTS:ConnectRetryInterval="5"
+      DTS:ConnectionString="Data Source=localhost;User ID=sa;Initial Catalog=NFX_DW;Provider=SQLNCLI11.1;Application Name=SSIS-NFX_ETL-{A6402357-A5DE-4F0A-B23E-A0BF567BCB05}localhost.NFX_DW.sa;Auto Translate=False;">
+      <DTS:Password
+        DTS:Name="Password"
+        Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAP5EIMxPENECXcUSZWYj1WgAAAAACAAAAAAAQZgAAAAEAACAAAADPdBLod5X4+xR8WfuBBLzH6klvb+OqwpyYHBYgHT8QqgAAAAAOgAAAAAIAACAAAADoiG+WelI/EX/Zc1CD/T1UPz8BwVMWd2yaZfpXfL9QRYAAAAAQmuKQkGy2/ZZsT73e2d3og17s2eZKykyqLba+tZxBYgdqOypFBf4WhwQjQIzvkjJyTuEdRCj1houOy4Yn9z1VyydkoPcujve/7LA3iKbSkLRGaLYZ1i77p/UYD28mOKPWZnRS1ehonmyFmIIISkD4kWQxsit/mkEGNb1i/gem60AAAAA9HAxqMRwiXyFP1KwyOfW/LdadkFSKbww8M6YMY+DDB6uTvxU/vfLFGi3QLANvVOvoz1iZUQciFEdfg88+9Kd0</DTS:Password>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

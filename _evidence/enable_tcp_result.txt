@@ -1,0 +1,5 @@
+﻿START 2026-06-13T21:23:49
+registry: Tcp\Enabled=1, IPAll TcpPort=1433
+Restarting MSSQLSERVER...
+service state: Running
+OK DONE 2026-06-13T21:23:54

@@ -1,0 +1,149 @@
+currency_code,currency_name_pl,nbp_table_type
+AED,dirham ZEA (Zjednoczone Emiraty Arabskie),B
+AFN,afgani (Afganistan),B
+ALL,lek (Albania),B
+AMD,dram (Armenia),B
+AOA,kwanza (Angola),B
+ARS,peso argentyńskie,B
+AUD,dolar australijski,A
+AWG,florin arubański,B
+AZN,manat azerbejdżański,B
+BAM,wymienialna marka (Bośnia i Hercegowina),B
+BBD,dolar barbadoski,B
+BDT,taka (Bangladesz),B
+BHD,dinar bahrajski,B
+BIF,frank burundyjski,B
+BND,dolar brunejski,B
+BOB,boliwiano (Boliwia),B
+BRL,real (Brazylia),A
+BSD,dolar bahamski,B
+BWP,pula (Botswana),B
+BYN,rubel białoruski,B
+BZD,dolar belizeński,B
+CAD,dolar kanadyjski,A
+CDF,frank kongijski (Dem. Republika Konga),B
+CHF,frank szwajcarski,A
+CLP,peso chilijskie,A
+CNY,yuan renminbi (Chiny),A
+COP,peso kolumbijskie,B
+CRC,colon kostarykański,B
+CUP,peso kubańskie,B
+CVE,escudo Zielonego Przylądka,B
+CZK,korona czeska,A
+DJF,frank Dżibuti,B
+DKK,korona duńska,A
+DOP,peso dominikańskie,B
+DZD,dinar algierski,B
+EGP,funt egipski,B
+ERN,nakfa (Erytrea),B
+ETB,birr etiopski,B
+EUR,euro,A
+FJD,dolar Fidżi,B
+GBP,funt szterling,A
+GEL,lari (Gruzja),B
+GHS,Ghana cedi ,B
+GIP,funt gibraltarski,B
+GMD,dalasi (Gambia),B
+GNF,frank gwinejski,B
+GTQ,quetzal (Gwatemala),B
+GYD,dolar gujański,B
+HKD,dolar Hongkongu,A
+HNL,lempira (Honduras),B
+HTG,gourde (Haiti),B
+HUF,forint (Węgry),A
+IDR,rupia indonezyjska,A
+ILS,nowy izraelski szekel,A
+INR,rupia indyjska,A
+IQD,dinar iracki,B
+IRR,rial irański,B
+ISK,korona islandzka,A
+JMD,dolar jamajski,B
+JOD,dinar jordański,B
+JPY,jen (Japonia),A
+KES,szyling kenijski,B
+KGS,som (Kirgistan),B
+KHR,riel (Kambodża),B
+KMF,frank Komorów,B
+KRW,won południowokoreański,A
+KWD,dinar kuwejcki,B
+KZT,tenge (Kazachstan),B
+LAK,kip (Laos),B
+LBP,funt libański,B
+LKR,rupia lankijska,B
+LRD,dolar liberyjski,B
+LSL,loti (Lesotho),B
+LYD,dinar libijski,B
+MAD,dirham marokański,B
+MDL,lej Mołdawii,B
+MGA,ariary (Madagaskar),B
+MKD,denar (Macedonia Północna),B
+MMK,"kyat (Myanmar, Birma)",B
+MNT,tugrik (Mongolia),B
+MOP,pataca (Makau),B
+MRU,ouguiya (Mauretania),B
+MUR,rupia Mauritiusu,B
+MVR,rupia (Malediwy),B
+MWK,kwacha malawijska,B
+MXN,peso meksykańskie,A
+MYR,ringgit (Malezja),A
+MZN,metical (Mozambik),B
+NAD,dolar namibijski,B
+NGN,naira (Nigeria),B
+NIO,cordoba oro (Nikaragua),B
+NOK,korona norweska,A
+NPR,rupia nepalska,B
+NZD,dolar nowozelandzki,A
+OMR,rial omański,B
+PAB,balboa (Panama),B
+PEN,sol (Peru),B
+PGK,kina (Papua-Nowa Gwinea),B
+PHP,peso filipińskie,A
+PKR,rupia pakistańska,B
+PYG,guarani (Paragwaj),B
+QAR,rial katarski,B
+RON,lej rumuński,A
+RSD,dinar serbski,B
+RUB,rubel rosyjski,B
+RWF,frank rwandyjski,B
+SAR,rial saudyjski,B
+SBD,dolar Wysp Salomona,B
+SCR,rupia seszelska,B
+SDG,funt sudański,B
+SEK,korona szwedzka,A
+SGD,dolar singapurski,A
+SLE,leone (Sierra Leone),B
+SOS,szyling somalijski,B
+SRD,dolar surinamski,B
+SSP,funt południowosudański,B
+STN,dobra (Wyspy Świętego Tomasza i Książęca),B
+SVC,colon salwadorski,B
+SYP,funt syryjski,B
+SZL,lilangeni (Eswatini),B
+THB,bat (Tajlandia),A
+TJS,somoni (Tadżykistan),B
+TMT,nowy manat (Turkmenistan),B
+TND,dinar tunezyjski,B
+TOP,pa'anga (Tonga),B
+TRY,lira turecka,A
+TTD,dolar Trynidadu i Tobago,B
+TWD,nowy dolar tajwański,B
+TZS,szyling tanzański,B
+UAH,hrywna (Ukraina),A
+UGX,szyling ugandyjski,B
+USD,dolar amerykański,A
+UYU,peso urugwajskie,B
+UZS,sum (Uzbekistan),B
+VES,boliwar soberano (Wenezuela),B
+VND,dong (Wietnam),B
+VUV,vatu (Vanuatu),B
+WST,tala (Samoa),B
+XAF,frank CFA BEAC,B
+XCD,dolar wschodniokaraibski,B
+XCG,gulden karaibski,B
+XDR,SDR (MFW),A
+XOF,frank CFA BCEAO ,B
+XPF,frank CFP  ,B
+YER,rial jemeński,B
+ZAR,rand (Republika Południowej Afryki),A
+ZMW,kwacha zambijska,B
+ZWG,złoto Zimbabwe,B

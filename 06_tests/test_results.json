@@ -1,0 +1,133 @@
+{
+  "generated": "2026-06-15T02:28:11.464510",
+  "passed": 14,
+  "total": 14,
+  "tests": [
+    {
+      "id": "T-ETL-01",
+      "layer": "ETL / CSV",
+      "cel": "Kompletnosc ekstrakcji: liczba wierszy w staging = liczba rekordow zaladowanego pliku",
+      "kroki": "COUNT(*) staging vs liczba rekordow CSV (pelny lub probka)",
+      "oczekiwany": "rownosc z jednym ze zrodel",
+      "status": "PASS",
+      "potwierdzenie": "staging=4,505 -> probka (pelny=175917 / probka=4505)"
+    },
+    {
+      "id": "T-ETL-02",
+      "layer": "ETL / transformacja",
+      "cel": "Brak gubienia danych: kazdy poprawny wiersz staging ma odpowiednik w FACT_Prices",
+      "kroki": "valid(staging) = dopasowane do FACT_Prices; niepoprawne -> error_log",
+      "oczekiwany": "kazdy poprawny wiersz obecny w fakcie",
+      "status": "PASS",
+      "potwierdzenie": "valid_staging=4,505 dopasowane_w_fakcie=4,505; odrzucone=0"
+    },
+    {
+      "id": "T-ETL-03",
+      "layer": "ETL / walidacja",
+      "cel": "Reguła jakości: ceny <=0 odrzucone do error_log, brak w fakcie",
+      "kroki": "FACT_Prices WHERE local_price<=0  (oczek. 0) oraz error_log z powodem 'price%'",
+      "oczekiwany": "0 zlych cen w fakcie; wszystkie odrzuty opisane",
+      "status": "PASS",
+      "potwierdzenie": "zle_w_fakcie=0; odrzuty_price=0/0"
+    },
+    {
+      "id": "T-ETL-04",
+      "layer": "ETL / NBP",
+      "cel": "Pobranie kursow: tabela A pokrywa >=32 walut, brak NULL w mid",
+      "kroki": "DISTINCT currency_key oraz NULL mid w FACT_ExchangeRates (table_type='A')",
+      "oczekiwany": ">=32 walut, 0 NULL mid",
+      "status": "PASS",
+      "potwierdzenie": "walut_A=32; null_mid_A=0"
+    },
+    {
+      "id": "T-ETL-05",
+      "layer": "ETL / limit 93 dni",
+      "cel": "Zapytanie o 180 dni dzielone na segmenty <=93 dni (limit NBP, brak 400)",
+      "kroki": "nbp_fetch.daterange_segments(2026-01-01, 2026-06-29)",
+      "oczekiwany": ">=2 segmenty, kazdy <=93 dni",
+      "status": "PASS",
+      "potwierdzenie": "segmentow=2, max_dni=90"
+    },
+    {
+      "id": "T-DW-01",
+      "layer": "Hurtownia / SCD2",
+      "cel": "DIM_Product SCD Typ 2: zmiana atrybutu zamyka stary rekord i tworzy nowy",
+      "kroki": "zmien color_name dla 'CW7635-991', wywolaj usp_LoadDimProduct_SCD2 (load_date=jutro)",
+      "oczekiwany": "stary is_current=0+valid_to; nowy is_current=1 z nowa wartoscia; +1 wiersz",
+      "status": "PASS",
+      "potwierdzenie": "przed=1 po=2; zamkniete=1; nowy_aktualny=1"
+    },
+    {
+      "id": "T-DW-02",
+      "layer": "Hurtownia / przeliczenie",
+      "cel": "Poprawnosc transformacji: price_pln = local_price * kurs_mid (USD)",
+      "kroki": "MAX(ABS(price_pln - local_price*kurs_USD)) dla wszystkich rekordow USD",
+      "oczekiwany": "odchylenie <= 0,001 PLN (zaokraglenie)",
+      "status": "PASS",
+      "potwierdzenie": "kurs_USD=3.727000; max_odchylenie=2.999999992425728e-05"
+    },
+    {
+      "id": "T-DW-03",
+      "layer": "Hurtownia / dedup FX",
+      "cel": "Deduplikacja FX: brak duplikatow (data+waluta+tabela)",
+      "kroki": "COUNT(*) vs COUNT(DISTINCT effective_date,currency_key,table_type)",
+      "oczekiwany": "rownosc",
+      "status": "PASS",
+      "potwierdzenie": "count=7,708 distinct=7,708"
+    },
+    {
+      "id": "T-DW-04",
+      "layer": "Hurtownia / integralnosc",
+      "cel": "Integralnosc referencyjna: brak osieroconych kluczy obcych w FACT_Prices",
+      "kroki": "FACT_Prices bez dopasowania w ktoryms z 5 wymiarow",
+      "oczekiwany": "0 osieroconych wierszy",
+      "status": "PASS",
+      "potwierdzenie": "osierocone=0"
+    },
+    {
+      "id": "T-BI-01",
+      "layer": "BI / miara marzy",
+      "cel": "Poprawnosc miary: marza z widoku BI = reczne (max-min)/min z faktow",
+      "kroki": "porownaj bi.v_product_arbitrage.margin_pct dla 'BA5957-077' z obliczeniem recznym",
+      "oczekiwany": "zgodnosc <= 0,5 p.p.",
+      "status": "PASS",
+      "potwierdzenie": "BI=894.5% reczne=894.5%"
+    },
+    {
+      "id": "T-BI-02",
+      "layer": "BI / outliery",
+      "cel": "Reguła outlierow: widok arbitrazu nie zawiera cen-sentineli (>50000 PLN)",
+      "kroki": "bi.v_product_arbitrage WHERE max_price_pln>50000",
+      "oczekiwany": "0 wierszy",
+      "status": "PASS",
+      "potwierdzenie": "outliery_w_widoku=0"
+    },
+    {
+      "id": "T-XL-01",
+      "layer": "Spojnosc (cross-layer)",
+      "cel": "Ta sama cena na kazdym etapie: plik -> staging -> fakt -> widok BI",
+      "kroki": "sledz CW7635-991/AT przez warstwy",
+      "oczekiwany": "identyczna cena lokalna",
+      "status": "PASS",
+      "potwierdzenie": "plik=119.99 staging=119.99 fakt=119.99 BI=119.99"
+    },
+    {
+      "id": "T-INC-01",
+      "layer": "Scenariusz / incremental",
+      "cel": "Kolejna iteracja: ponowne ladowanie FX nie tworzy duplikatow (idempotencja)",
+      "kroki": "ponowne EXEC usp_LoadFactExchangeRates na tym samym staging (w transakcji)",
+      "oczekiwany": "przyrost = 0 wierszy",
+      "status": "PASS",
+      "potwierdzenie": "przed=7,708 po=7,708 przyrost=0"
+    },
+    {
+      "id": "T-E2E-01",
+      "layer": "End-to-end",
+      "cel": "Calosciowe dzialanie: ETL SUCCESS i warstwa BI zwraca sensowne KPI",
+      "kroki": "etl_run_log (ostatni przebieg) + bi.v_kpi_summary",
+      "oczekiwany": "status SUCCESS, produkty>0, okazje>0",
+      "status": "PASS",
+      "potwierdzenie": "status=SUCCESS; produkty=29,249; rynki=45; okazje>20%=9,227"
+    }
+  ]
+}

@@ -1,0 +1,700 @@
+
+NFX – Nike Foreign Exchange
+Dokumentacja Hurtowni Danych
+
+Cezary Polkowski, Karol Socha
+Hurtownie Danych i Business Intelligence
+Maj 2026
+
+1. Opis Zbiorów Danych
+
+1.1 Źródło 1 – Nike Global Catalogue 2026
+Datasety Kaggle (bsthere/nike-global-catalogue-2026) zawierają globalny cennik produktów Nike na rok 2026, obejmujący 45 krajów i rynków zbytu. Pliki CSV reprezentują oficjalne ceny detaliczne sugerowane przez producenta (MSRP) w walutach lokalnych każdego rynku.
+
+Dostęp i warunki:
+URL: https://www.kaggle.com/datasets/bsthere/nike-global-catalogue-2026/data
+Dostęp: Publiczny (konto Kaggle wymagane do pobrania). Pobieranie jednorazowe + odświeżanie kwartalne.
+Licencja: Kaggle – dane scrapowane / syntetyczne do celów analitycznych.
+Format: Pliki płaskie .CSV (prawdopodobnie jeden plik per kraj lub jeden zbiorczy z kolumną country_code).
+Szacowany rozmiar: ok. 1,5 GB łącznie (45 krajów × kilkaset tysięcy rekordów).
+Harmonogram odświeżania: Kwartalnie (z ewentualnym odświeżaniem miesięcznym przy zmianach cennika).
+
+Zidentyfikowana struktura kolumn:
+
+Kolumna CSV
+Typ danych
+Opis
+Przykładowa wartość
+product_id / sku
+VARCHAR(50)
+Unikalny identyfikator SKU produktu
+DQ8426-101
+model_name
+VARCHAR(200)
+Pełna nazwa modelu produktu
+Nike Air Max 90
+subtitle
+VARCHAR(200)
+Podtytuł / wariant kolekcji
+Retro OG
+category
+VARCHAR(50)
+Kategoria główna produktu
+Footwear
+subcategory
+VARCHAR(100)
+Podkategoria produktu
+Running
+gender
+VARCHAR(20)
+Przeznaczenie płciowe
+Men / Women / Kids / Unisex
+colorway
+VARCHAR(100)
+Opis kolorystyki
+White/Black/Grey
+price
+DECIMAL(10,2)
+Cena MSRP w walucie lokalnej
+149.99
+currency_code
+CHAR(3)
+Kod waluty (ISO 4217)
+USD
+country_code
+CHAR(2)
+Kod kraju (ISO 3166-1 alpha-2)
+US
+country_name
+VARCHAR(100)
+Pełna nazwa kraju
+United States
+region
+VARCHAR(50)
+Region geograficzny Nike
+North America
+availability
+VARCHAR(20)
+Status dostępności
+In Stock
+release_year
+SMALLINT
+Rok katalogu
+2026
+style_code
+VARCHAR(50)
+Kod stylu (może się różnić od SKU)
+DQ8426
+tags
+VARCHAR(500)
+Tagi produktu (lista rozdzielana przecinkami)
+running,classic,sale
+
+1.2 Źródło 2 – NBP Web API (Kursy Walut)
+Narodowy Bank Polski udostępnia publiczne REST API pod adresem https://api.nbp.pl/api/, zwracające historyczne i bieżące kursy walut w formatach JSON i XML. API oferuje trzy typy tabel kursowych i nie wymaga uwierzytelnienia.
+
+Dostęp i warunki:
+Base URL: https://api.nbp.pl/api/
+Format odpowiedzi: JSON (domyślny) lub XML; wybierany przez parametr ?format=json lub nagłówek Accept.
+Uwierzytelnienie: Brak – API publicznie dostępne.
+Protokół: Wyłącznie HTTPS (od 1 sierpnia 2025 r. HTTP nie jest obsługiwany).
+Archiwum historyczne: Kursy walut dostępne od 2 stycznia 2002 r. Jedno zapytanie obejmuje max. 93 dni.
+Rozmiar danych: ok. 5–10 MB rocznie dla wszystkich walut w tabeli A.
+Harmonogram odświeżania: Codziennie (dni robocze NBP); SSIS pobiera dane każdego ranka.
+
+Typy tabel kursowych NBP:
+Tabela
+Opis
+Endpoint (przykład)
+A
+Kursy średnie walut wymienialnych (ok. 35 walut); pole Mid
+GET /api/exchangerates/tables/A/
+B
+Kursy średnie walut rzadziej notowanych (ok. 105 walut); pole Mid
+GET /api/exchangerates/tables/B/
+C
+Kursy kupna i sprzedaży walut (dla głównych par); pola Bid i Ask
+GET /api/exchangerates/tables/C/
+
+Struktura odpowiedzi JSON dla tabeli A (pojedynczy dzień):
+
+Pole JSON
+Typ
+Opis
+Przykład
+table
+String
+Typ tabeli (A / B / C)
+A
+no
+String
+Numer tabeli w roku (format NNN/A/RRRR)
+089/A/2026
+effectiveDate
+Date
+Data publikacji (ISO 8601: RRRR-MM-DD)
+2026-05-09
+tradingDate
+Date
+Data notowania (tylko tabela C)
+2026-05-08
+rates[].code
+String
+3-literowy kod waluty (ISO 4217)
+USD
+rates[].currency
+String
+Pełna nazwa waluty
+dolar amerykański
+rates[].country
+String
+Nazwa kraju (historyczny atrybut)
+Stany Zjednoczone
+rates[].mid
+Decimal
+Kurs średni (tabele A i B)
+3.9842
+rates[].bid
+Decimal
+Kurs kupna (tylko tabela C)
+3.9601
+rates[].ask
+Decimal
+Kurs sprzedaży (tylko tabela C)
+4.0440
+
+Przykłady endpointów:
+Aktualna tabela A: https://api.nbp.pl/api/exchangerates/tables/A/?format=json
+Zakres historyczny: https://api.nbp.pl/api/exchangerates/tables/A/2025-01-01/2025-03-31/?format=json
+Kurs USD (seria 30 notowań): https://api.nbp.pl/api/exchangerates/rates/A/USD/last/30/?format=json
+
+2. Proces ETL – Ekstrakcja, Transformacja, Ładowanie
+
+Warstwa integracji realizowana jest w Microsoft SQL Server Integration Services (SSIS). Przepływ danych podzielony jest na dwa niezależne pakiety SSIS, orkiestrowane przez SQL Server Agent.
+
+2.1 Pakiet SSIS #1 – Nike Catalogue CSV
+Ekstrakcja
+Flat File Source (CSV) z katalogu lokalnego lub lokalizacji sieciowej.
+Kod strony UTF-8; separator: przecinek; enclosing: cudzysłów.
+Wczytywany jeden plik kwartalnie; schemat weryfikowany względem metadanych.
+
+Transformacja
+Data Conversion: price DECIMAL, currency_code CHAR(3), country_code CHAR(2), release_year SMALLINT.
+Derived Column: Generowanie klucza zastępczego product_key (HASHBYTES SHA-256 z sku + country_code), ETL_load_date = GETDATE().
+Lookup do DIM_Product: Sprawdzenie, czy SKU już istnieje – jeśli tak, przekazanie do gałęzi SCD2 Update; jeśli nie – Insert.
+SCD2 (Slowly Changing Dimension): Zmiany atrybutów produktu (np. cena, colorway, subcategory) zapisywane przez zamknięcie starego rekordu (valid_to = dzień poprzedni, is_current = 0) i dodanie nowego (valid_from = dziś, is_current = 1).
+Lookup do DIM_Geography: Mapowanie country_code → region zgodnie z tabelą mapowania Nike.
+Error Redirect: Wiersze z null SKU lub ceną ≤ 0 przekierowane do tabeli staging.error_log z kolumną reject_reason.
+
+Ładowanie
+OLE DB Destination → staging.stg_nike_prices (tabela przejściowa, TRUNCATE przed ładowaniem).
+Po walidacji: MERGE do DIM_Product oraz INSERT do FACT_Prices.
+Indeksy na kolumnach łączenia przebudowywane po zakończeniu ładowania (ALTER INDEX REBUILD).
+
+2.2 Pakiet SSIS #2 – NBP FX Rates
+Ekstrakcja
+Script Task (Python/C#): wywołanie HTTPS GET na endpoint tabeli A i C; parsowanie JSON przy użyciu Newtonsoft.Json/Python.
+Parametry: data_start, data_end pobierane ze zmiennej SSIS lub tabeli konfiguracyjnej.
+Zapytania w 93-dniowych segmentach (limit API NBP) z automatycznym podziałem dużych zakresów dat.
+
+Transformacja
+Normalizacja JSON: Spłaszczenie tablicy rates[] do formatu tabelarycznego (table_type, effective_date, currency_code, mid/bid/ask).
+Data Conversion: effective_date → DATE, mid/bid/ask → DECIMAL(10,6).
+Lookup do DIM_Currency: Weryfikacja currency_code w słowniku ISO 4217; nieznane kody przekierowane do logu błędów.
+Derived Column: fx_source = 'NBP', load_timestamp = GETDATE().
+
+Ładowanie
+INSERT INTO FACT_ExchangeRates ... WHERE NOT EXISTS (klucz: effective_date + currency_code + table_type) – deduplikacja.
+Aktualizacja DIM_Currency.current_mid_rate po każdym przebiegu (SCD1).
+
+2.3 STTM – Source to Target Mapping
+
+Źródło (pole CSV/JSON)
+Transformacja
+Cel (tabela.kolumna)
+sku
+TRIM, UPPER
+DIM_Product.sku
+model_name
+TRIM, replace special chars
+DIM_Product.model_name
+category
+LOOKUP → DIM_Category.category_key
+FACT_Prices.category_key
+price
+CAST DECIMAL(10,2)
+FACT_Prices.local_price
+currency_code
+LOOKUP → DIM_Currency.currency_key
+FACT_Prices.currency_key
+country_code
+LOOKUP → DIM_Geography.geo_key
+FACT_Prices.geo_key
+release_year
+MAP → DIM_Date.date_key (1 Jan RRRR)
+FACT_Prices.date_key
+rates[].effectiveDate
+CAST DATE
+DIM_Date.full_date
+rates[].code
+ISO 4217 LOOKUP
+DIM_Currency.currency_code
+rates[].mid
+CAST DECIMAL(10,6)
+FACT_ExchangeRates.mid_rate
+rates[].bid
+CAST DECIMAL(10,6)
+FACT_ExchangeRates.bid_rate
+rates[].ask
+CAST DECIMAL(10,6)
+FACT_ExchangeRates.ask_rate
+
+2.4 Orkiestracja (SQL Server Agent)
+Job #1 – NikeETL_FX_Daily: Uruchamiany codziennie o 07:00 (dni robocze). Pobiera tabele A i C z NBP za poprzedni dzień roboczy.
+Job #2 – NikeETL_Catalogue_Quarterly: Uruchamiany 1. dnia każdego kwartału jeśli istnieją nowe dane (lub ręcznie). Ładuje pliki CSV Nike.
+Alerting: Database Mail – e-mail przy błędzie pakietu SSIS lub odchyleniu liczby wierszy &gt; 20%.
+
+3. Model Fizyczny Hurtowni Danych
+
+Model hurtowni zbudowany jest w schemacie gwiazdy (Star Schema) na Microsoft SQL Server. Centralną tabelą faktów jest FACT_Prices. Uzupełnieniem jest druga tabela faktów FACT_ExchangeRates.
+
+3.1 Tabele wymiarów
+DIM_Date
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+date_key
+INT
+PK
+TAK
+Klucz zastępczy (YYYYMMDD)
+full_date
+DATE
+TAK
+Pełna data
+year
+SMALLINT
+TAK
+Rok
+quarter
+TINYINT
+TAK
+Kwartał (1–4)
+month
+TINYINT
+TAK
+Miesiąc (1–12)
+month_name
+VARCHAR(20)
+TAK
+Nazwa miesiąca (np. Styczeń)
+week_of_year
+TINYINT
+TAK
+Numer tygodnia (ISO)
+day_of_week
+TINYINT
+TAK
+Dzień tygodnia (1=Pon)
+is_weekend
+BIT
+TAK
+Flaga weekendu
+is_nbp_working_day
+BIT
+TAK
+Flaga dnia roboczego NBP
+
+DIM_Product (SCD Typ 2)
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+product_key
+INT IDENTITY
+PK
+TAK
+Klucz zastępczy (surrogate key)
+sku
+VARCHAR(50)
+TAK
+Naturalny klucz – kod SKU Nike
+model_name
+VARCHAR(200)
+TAK
+Nazwa modelu
+subtitle
+VARCHAR(200)
+NIE
+Podtytuł wariantu
+subcategory
+VARCHAR(100)
+TAK
+Podkategoria produktu
+gender
+VARCHAR(20)
+TAK
+Przeznaczenie (Men/Women/Kids/Unisex)
+colorway
+VARCHAR(100)
+NIE
+Kod/opis kolorystyki
+style_code
+VARCHAR(50)
+NIE
+Kod stylu (bez rozmiaru)
+valid_from
+DATE
+TAK
+Data początku ważności rekordu (SCD2)
+valid_to
+DATE
+NIE
+Data końca ważności (NULL = aktualny)
+is_current
+BIT
+TAK
+Flaga aktualnego rekordu (1 = aktualny)
+etl_load_date
+DATETIME
+TAK
+Data załadowania przez ETL
+
+DIM_Geography
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+geo_key
+INT IDENTITY
+PK
+TAK
+Klucz zastępczy
+country_code
+CHAR(2)
+TAK
+Kod ISO 3166-1 alpha-2
+country_name
+VARCHAR(100)
+TAK
+Pełna nazwa kraju
+region
+VARCHAR(50)
+TAK
+Region Nike (np. EMEA, North America)
+sub_region
+VARCHAR(50)
+NIE
+Podregion (np. Western Europe)
+currency_code
+CHAR(3)
+FK→DIM_Currency
+TAK
+Waluta lokalna kraju
+
+DIM_Currency
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+currency_key
+INT IDENTITY
+PK
+TAK
+Klucz zastępczy
+currency_code
+CHAR(3)
+TAK
+Kod ISO 4217 (np. USD, EUR)
+currency_name
+VARCHAR(100)
+TAK
+Pełna nazwa waluty
+currency_name_pl
+VARCHAR(100)
+NIE
+Polska nazwa waluty (z NBP API)
+country_name_nbp
+VARCHAR(100)
+NIE
+Kraj wg NBP
+nbp_table_type
+CHAR(1)
+TAK
+Typ tabeli NBP: A, B lub C
+is_base_currency
+BIT
+TAK
+Flaga waluty bazowej (PLN = 1)
+current_mid_rate
+DECIMAL(10,6)
+NIE
+Aktualny kurs średni do PLN (SCD1)
+
+DIM_Category
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+category_key
+INT IDENTITY
+PK
+TAK
+Klucz zastępczy
+category
+VARCHAR(50)
+TAK
+Kategoria główna (Footwear / Apparel / Accessories)
+subcategory
+VARCHAR(100)
+TAK
+Podkategoria (Running, Basketball, Jordan, itp.)
+category_level
+TINYINT
+TAK
+Poziom hierarchii (1 = główna, 2 = pod)
+parent_category_key
+INT
+FK→self
+NIE
+Klucz kategorii nadrzędnej (hierarchia)
+
+3.2 Tabela faktów FACT_Prices
+Granulacja: jeden wiersz = jeden produkt (SKU) w jednym kraju w jednej dacie obowiązywania cennika.
+
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+price_key
+BIGINT IDENTITY
+PK
+TAK
+Klucz zastępczy
+product_key
+INT
+FK→DIM_Product
+TAK
+Klucz produktu
+geo_key
+INT
+FK→DIM_Geography
+TAK
+Klucz geografii
+currency_key
+INT
+FK→DIM_Currency
+TAK
+Klucz waluty lokalnej
+date_key
+INT
+FK→DIM_Date
+TAK
+Data obowiązywania cennika
+category_key
+INT
+FK→DIM_Category
+TAK
+Klucz kategorii
+local_price
+DECIMAL(10,2)
+TAK
+Cena detaliczna w walucie lokalnej
+price_pln
+DECIMAL(12,4)
+NIE
+Przeliczona cena w PLN (mid NBP)
+price_eur
+DECIMAL(12,4)
+NIE
+Przeliczona cena w EUR (kurs krzyżowy)
+price_usd
+DECIMAL(12,4)
+NIE
+Przeliczona cena w USD (kurs krzyżowy)
+is_catalogue_price
+BIT
+TAK
+Flaga ceny katalogowej (1 = tak)
+etl_load_date
+DATETIME
+TAK
+Data załadowania przez ETL
+
+3.3 Tabela faktów FACT_ExchangeRates
+Granulacja: jeden wiersz = kurs waluty na jeden dzień roboczy NBP.
+
+Kolumna
+Typ
+PK/FK
+Wymagane
+Opis
+fx_key
+BIGINT IDENTITY
+PK
+TAK
+Klucz zastępczy
+date_key
+INT
+FK→DIM_Date
+TAK
+Data publikacji kursu
+currency_key
+INT
+FK→DIM_Currency
+TAK
+Klucz waluty
+table_type
+CHAR(1)
+TAK
+Typ tabeli NBP: A, B lub C
+table_no
+VARCHAR(20)
+TAK
+Numer tabeli (np. 089/A/2026)
+mid_rate
+DECIMAL(10,6)
+NIE
+Kurs średni PLN/waluta (tab. A, B)
+bid_rate
+DECIMAL(10,6)
+NIE
+Kurs kupna (tab. C)
+ask_rate
+DECIMAL(10,6)
+NIE
+Kurs sprzedaży (tab. C)
+spread
+DECIMAL(10,6)
+NIE
+Spread = ask - bid (obliczany)
+trading_date
+DATE
+NIE
+Data notowania (tylko tab. C)
+effective_date
+DATE
+TAK
+Data publikacji (redundancja do date_key)
+fx_source
+VARCHAR(20)
+TAK
+Źródło kursu (NBP)
+load_timestamp
+DATETIME
+TAK
+Data/czas załadowania przez ETL
+4. Kluczowe Miary i Atrybuty
+
+4.1 Miary (Measures)
+Nazwa miary
+Formuła / opis
+Tabela źródłowa
+Cena lokalna [waluta]
+SUM(FACT_Prices.local_price)
+FACT_Prices
+Cena w PLN
+SUM(FACT_Prices.price_pln)
+FACT_Prices
+Cena w EUR
+SUM(FACT_Prices.price_eur)
+FACT_Prices
+Kurs średni (Mid)
+AVG(FACT_ExchangeRates.mid_rate)
+FACT_ExchangeRates
+Kurs kupna (Bid)
+AVG(FACT_ExchangeRates.bid_rate)
+FACT_ExchangeRates
+Kurs sprzedaży (Ask)
+AVG(FACT_ExchangeRates.ask_rate)
+FACT_ExchangeRates
+Spread walutowy
+AVG(ask_rate - bid_rate) / AVG(mid_rate) × 100 [%]
+FACT_ExchangeRates
+Indeks ceny względem PLN
+local_price / mid_rate (cena wyrażona w PLN)
+FACT_Prices + FACT_ExchangeRates
+Różnica ceny (arbitraż)
+MAX(price_pln) - MIN(price_pln) dla danego SKU
+FACT_Prices
+Marża potencjalna [%]
+(MAX - MIN) / MIN × 100 dla SKU po przeliczeniu na PLN
+FACT_Prices
+Liczba produktów
+COUNT(DISTINCT sku)
+DIM_Product
+Liczba rynków
+COUNT(DISTINCT country_code)
+DIM_Geography
+Zmienność kursu (odch. std.)
+STDEV(mid_rate) w oknie czasowym
+FACT_ExchangeRates
+
+4.2 Kluczowe atrybuty wymiarów
+Hierarchia DIM_Category: Category → Subcategory (2 poziomy; umożliwia drill-down w Power BI).
+Hierarchia DIM_Geography: Region → Sub-Region → Country (3 poziomy; drill-through na mapach).
+Hierarchia DIM_Date: Year → Quarter → Month → Day.
+SCD2 w DIM_Product: Atrybuty śledzone: model_name, subcategory, colorway, gender. Zmiana powoduje zamknięcie starego rekordu i dodanie nowego z datą valid_from.
+SCD1 w DIM_Currency: Pole current_mid_rate nadpisywane przy każdym codziennym ładowaniu FX.
+
+5. Koncepcja Raportowania (Power BI)
+
+Raporty Power BI łączą się z hurtownią danych przez tryb Import (odświeżanie raz dziennie po zakończeniu ETL). Idealnie trzy strony raportu (tabs):
+
+5.1 Strona 1 – Global Price Map
+Mapa choropleth (geograficzna) pokazująca cenę modelu wybranego przez użytkownika w przeliczeniu na PLN dla każdego z 45 krajów.
+Filtry: kategoria produktu, model, data (suwak czasowy).
+Tooltip: kraj, cena lokalna, waluta, kurs NBP, cena w PLN.
+KPI cards: najdroższy rynek, najtańszy rynek, spread cenowy.
+
+5.2 Strona 2 – Arbitrage Opportunities
+Tabela rankingowa: TOP-N produktów z największą różnicą cenową (max-min PLN) między rynkami.
+Bar chart: potencjalna marża [%] dla TOP 20 SKU.
+Wykres liniowy: zmienność kursu wybranej waluty (3/6/12 miesięcy) z NBP.
+Alerty warunkowe (formatowanie kolorem): marża &gt; 20% → zielony; 10–20% → żółty; &lt; 10% → czerwony.
+
+5.3 Strona 3 – FX Dashboard
+Tabela kursów wszystkich walut (Tabela A NBP) z porównaniem dnia bieżącego do średniej 30-dniowej.
+Heatmapa: zmienność [%] walut na osi czasu (miesiące × waluty).
+Line chart: przebieg historyczny wybranej pary walutowej.
+KPI: waluty z najsilniejszym/najsłabszym trendem w ciągu ostatnich 30 dni.
+
+Przykładowy szkic raportu (Strona 2 – Arbitrage Opportunities) dołączony jako osobny załącznik PDF.
+
+6. Plan Testowania
+
+Komponent
+Typ testu
+Kryteria akceptacji
+SSIS – ładowanie CSV
+Test integracyjny
+Liczba wierszy w staging = liczba wierszy w pliku ±0
+SSIS – API NBP
+Test integracyjny
+Pobrane kursy dla wszystkich walut tabeli A (min. 30 walut); brak NULL w mid_rate
+DIM_Product SCD2
+Test regresji
+Po zmianie colorway SKU: stary rekord is_current=0, nowy is_current=1; valid_to poprawny
+FACT_Prices – przeliczenie
+Test jednostkowy
+price_pln = local_price / mid_rate ± 0.0001 dla każdego rekordu
+Arbitrage KPI
+Test biznesowy
+Marża dla Air Max 1 (US vs EU) zgodna z ręcznym obliczeniem ± 0.5%
+Power BI – odświeżanie
+Test E2E
+Raport odświeżony po ETL widzi dane z dnia bieżącego; czas odświeżania &lt; 10 min
+API NBP – limit 93 dni
+Test graniczny
+Zapytanie o 180 dni automatycznie podzielone na 2 segmenty bez błędu 400
+Duplikaty w FACT_ExchangeRates
+Test jakości danych
+COUNT(*) = COUNT(DISTINCT date_key + currency_key + table_type)
+

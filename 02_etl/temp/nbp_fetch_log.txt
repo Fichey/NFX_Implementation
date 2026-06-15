@@ -1,0 +1,20 @@
+2026-06-13T20:25:25 === NBP FETCH start ===  zakres 2026-01-01..2026-06-13  tabele=['A', 'B', 'C']
+2026-06-13T20:25:25 Liczba segmentow (<= 90 dni): 2
+2026-06-13T20:25:25 --- Tabela A ---
+2026-06-13T20:25:25   [ OK ] A 2026-01-01..2026-03-31 (90 dni) -> 62 tabel
+2026-06-13T20:25:26   [ OK ] A 2026-04-01..2026-06-13 (74 dni) -> 50 tabel
+2026-06-13T20:25:26   Tabela A: 3584 wierszy po splaszczeniu
+2026-06-13T20:25:26 --- Tabela B ---
+2026-06-13T20:25:26   [ OK ] B 2026-01-01..2026-03-31 (90 dni) -> 12 tabel
+2026-06-13T20:25:26   [ OK ] B 2026-04-01..2026-06-13 (74 dni) -> 11 tabel
+2026-06-13T20:25:26   Tabela B: 2668 wierszy po splaszczeniu
+2026-06-13T20:25:26 --- Tabela C ---
+2026-06-13T20:25:26   [ OK ] C 2026-01-01..2026-03-31 (90 dni) -> 62 tabel
+2026-06-13T20:25:27   [ OK ] C 2026-04-01..2026-06-13 (74 dni) -> 50 tabel
+2026-06-13T20:25:27   Tabela C: 1456 wierszy po splaszczeniu
+2026-06-13T20:25:27 Po deduplikacji: 7708 / 7708 wierszy
+2026-06-13T20:25:27 Zapisano .\stg_fx_rates.csv
+2026-06-13T20:25:27 Zapisano .\dim_currency_seed.csv  (148 walut)
+2026-06-13T20:25:27 Unikalne waluty: 148  (A=32, B=116, C=0)
+2026-06-13T20:25:27 Zakres dat notowan: 2026-01-02 .. 2026-06-12  (112 dni roboczych)
+2026-06-13T20:25:27 === NBP FETCH koniec ===

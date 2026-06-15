@@ -1,0 +1,44 @@
+NFX – Nike Foreign Exchange 
+Członkowie zespołu: Cezary Polkowski, Karol Socha 
+1. Koncepcja Projektu i Cel Biznesowy 
+• Kontekst: Projektujemy rozwiązanie dla dużej, międzynarodowej platformy 
+resellingowej lub europejskiego dystrybutora odzieży streetwear. 
+• Cel biznesowy: Identyfikacja okazji do arbitrażu cenowego (geograficznych różnic w 
+cenach) poprzez analizę globalnego cennika produktów Nike na rok 2026 w 
+zestawieniu z historycznymi i bieżącymi wahaniami kursów walut. 
+• Planowane korzyści: Optymalizacja kosztów zaopatrzenia (wskazanie rynków, z 
+których import jest najbardziej opłacalny przy obecnym kursie walut). 
+o Maksymalizacja marży na odsprzedaży. 
+o Zbudowanie zautomatyzowanego dashboardu ostrzegającego o nagłych 
+"okazjach" wynikających ze spadku wartości lokalnych walut w stosunku do 
+waluty bazowej. 
+2. Analiza Źródeł Danych 
+• Źródło 1: Nike Global Catalogue 2026 
+o Opis: Zbiór danych zawierający parametry produktów (SKU, nazwa modelu, 
+kategoria) oraz ich oficjalne ceny detaliczne w różnych regionach/krajach. 
+o Pochodzenie/Link: https://www.kaggle.com/datasets/bsthere/nike-global-
+catalogue-2026/data  
+o Format: Pliki płaskie .csv. 
+o Rozmiar (Estymacja): 1,5 GB 
+o Harmonogram odświeżania: Kwartalnie (lub miesięcznie przy aktualizacji 
+cenników). 
+• Źródło 2: Kursy Walut  
+o Opis: Historyczne i bieżące kursy wymiany walut dla rynków, na których 
+operuje Nike. 
+o Pochodzenie/Link: https://api.nbp.pl 
+o Format: Odpowiedź z API w formacie .json (lub .xml  / .csv). 
+o Rozmiar (Estymacja): ok. 5-10 MB rocznie. 
+o Harmonogram odświeżania: Codziennie. 
+3. Wysokopoziomowa Architektura Rozwiązania 
+• Warstwa Źródłowa: Pliki CSV (Katalog Nike) oraz REST API (Kursy walut). 
+• Warstwa Integracji i Transformacji (ETL): Microsoft SQL Server Integration 
+Services (SSIS). 
+• Warstwa Składowania (Data Warehouse): Relacyjna baza danych w Microsoft 
+SQL Server. Dane będą zorganizowane w modelu gwiazdy. 
+• Warstwa Analityczna i Prezentacji (BI): Microsoft Power BI. Raporty będą łączyć 
+się z hurtownią danych (za pomocą trybu Import lub DirectQuery), aby na 
+interaktywnych mapach i wykresach pokazywać marże i okazje zakupowe. 
+ 
+4. Diagram architektury 
+ 
+ 

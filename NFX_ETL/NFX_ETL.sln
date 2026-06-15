@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36717.8 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{C9674DCB-5085-4A16-B785-4C70DD1589BD}") = "NFX_ETL", "NFX_ETL.dtproj", "{63404CBF-3A50-911F-1FD9-62ECD8AEB98E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Development|Default = Development|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{63404CBF-3A50-911F-1FD9-62ECD8AEB98E}.Development|Default.ActiveCfg = Development
+		{63404CBF-3A50-911F-1FD9-62ECD8AEB98E}.Development|Default.Build.0 = Development
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2CCE4110-7F92-43F4-AF4F-A7E82A77AC4B}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,36 @@
+{
+  "name": "NFX – Nike Foreign Exchange",
+  "dataColors": [
+    "#1F3864", "#E8A000", "#107C41", "#B07A00", "#D13438",
+    "#5B7FB9", "#9AA6C4", "#C7CEE0", "#6C757D", "#343A40"
+  ],
+  "foreground": "#333333",
+  "foregroundNeutralSecondary": "#555555",
+  "foregroundNeutralTertiary": "#888888",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F3F2F1",
+  "backgroundNeutral": "#EEEEEE",
+  "tableAccent": "#1F3864",
+  "good": "#107C41",
+  "neutral": "#B07A00",
+  "bad": "#D13438",
+  "maximum": "#D13438",
+  "center": "#E8A000",
+  "minimum": "#107C41",
+  "null": "#CCCCCC",
+  "textClasses": {
+    "title":    { "color": "#1F3864", "fontSize": 14, "fontFace": "Segoe UI Semibold" },
+    "header":   { "color": "#1F3864", "fontSize": 11, "fontFace": "Segoe UI Semibold" },
+    "callout":  { "color": "#1F3864", "fontSize": 28, "fontFace": "Segoe UI" },
+    "label":    { "color": "#333333", "fontSize": 9,  "fontFace": "Segoe UI" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } } }],
+        "border": [{ "show": true, "color": { "solid": { "color": "#DDDDDD" } }, "radius": 4 }],
+        "title": [{ "fontColor": { "solid": { "color": "#1F3864" } }, "fontSize": 11, "bold": true }]
+      }
+    }
+  }
+}

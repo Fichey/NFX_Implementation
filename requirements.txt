@@ -1,0 +1,5 @@
+# NFX – zależności Python (ETL, profilowanie, raporty, testy)
+pandas>=2.0
+requests>=2.30
+pyodbc>=5.0
+matplotlib>=3.7

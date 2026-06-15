@@ -1,0 +1,8 @@
+{
+  "server": "localhost",
+  "database": "NFX_DW",
+  "driver": "ODBC Driver 17 for SQL Server",
+  "trusted_connection": true,
+  "nike_csv": "../05_data_profiling/nike_product_country.csv",
+  "fx_csv": "stg_fx_rates.csv"
+}

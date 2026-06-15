@@ -1,0 +1,149 @@
+// =====================================================================
+// NFX – Nike Foreign Exchange | Miary DAX dla modelu Power BI
+// Wklej do Power BI Desktop (New measure) lub uzyj jako referencji.
+// Model: tabele DIM_Date, DIM_Currency, DIM_Geography, DIM_Category,
+//        DIM_Product, FACT_Prices, FACT_ExchangeRates (tryb Import).
+// Prog outliera: price_pln > 50000 (sentinele 100000 NZD) jest wykluczany.
+// =====================================================================
+
+// ---------- MIARY BAZOWE (ceny) ----------
+Local Price = SUM ( FACT_Prices[local_price] )
+
+Price PLN (snapshot) =
+CALCULATE ( SUM ( FACT_Prices[price_pln] ),
+            FACT_Prices[price_pln] <= 50000 )      // wyklucz outliery
+
+Avg Price PLN =
+CALCULATE ( AVERAGE ( FACT_Prices[price_pln] ),
+            FACT_Prices[price_pln] <= 50000 )
+
+Price EUR = CALCULATE ( SUM ( FACT_Prices[price_eur] ), FACT_Prices[price_pln] <= 50000 )
+Price USD = CALCULATE ( SUM ( FACT_Prices[price_usd] ), FACT_Prices[price_pln] <= 50000 )
+
+Liczba produktow = DISTINCTCOUNT ( DIM_Product[style_color] )
+Liczba rynkow    = DISTINCTCOUNT ( DIM_Geography[country_code] )
+
+// ---------- KURS DYNAMICZNY (przeliczenie po dacie) ----------
+// kurs mid waluty w kontekscie, na ostatni dostepny dzien <= wybrana data
+Mid kurs =
+VAR d = MAX ( DIM_Date[full_date] )
+VAR ostatni =
+    CALCULATE (
+        MAX ( FACT_ExchangeRates[effective_date] ),
+        FILTER ( ALL ( DIM_Date ), DIM_Date[full_date] <= d ),
+        FACT_ExchangeRates[table_type] IN { "A", "B" }
+    )
+RETURN
+    CALCULATE (
+        AVERAGE ( FACT_ExchangeRates[mid_rate] ),
+        FACT_ExchangeRates[effective_date] = ostatni,
+        FACT_ExchangeRates[table_type] IN { "A", "B" }
+    )
+
+// dynamiczna cena w PLN: cena lokalna * kurs mid z wybranej daty
+// (alternatywa wobec zamrozonego price_pln z ETL; pokazuje zmienne okazje w czasie)
+Cena PLN (dynamiczna) =
+SUMX (
+    FACT_Prices,
+    FACT_Prices[local_price]
+        * LOOKUPVALUE ( DIM_Currency[current_mid_rate],
+                        DIM_Currency[currency_key], FACT_Prices[currency_key] )
+)
+
+// ---------- ARBITRAZ (per produkt, w przekroju rynkow) ----------
+Min cena rynek PLN =
+MINX ( VALUES ( DIM_Geography[country_code] ),
+       CALCULATE ( AVERAGE ( FACT_Prices[price_pln] ), FACT_Prices[price_pln] <= 50000 ) )
+
+Max cena rynek PLN =
+MAXX ( VALUES ( DIM_Geography[country_code] ),
+       CALCULATE ( AVERAGE ( FACT_Prices[price_pln] ), FACT_Prices[price_pln] <= 50000 ) )
+
+Spread PLN = [Max cena rynek PLN] - [Min cena rynek PLN]
+
+Marza % = DIVIDE ( [Spread PLN], [Min cena rynek PLN] )
+
+// najtanszy / najdrozszy rynek (do kart i tooltipow)
+Najtanszy rynek =
+VAR t =
+    ADDCOLUMNS ( VALUES ( DIM_Geography[country_name] ),
+        "@p", CALCULATE ( AVERAGE ( FACT_Prices[price_pln] ), FACT_Prices[price_pln] <= 50000 ) )
+RETURN MINX ( TOPN ( 1, FILTER ( t, [@p] <> BLANK() ), [@p], ASC ), DIM_Geography[country_name] )
+
+Najdrozszy rynek =
+VAR t =
+    ADDCOLUMNS ( VALUES ( DIM_Geography[country_name] ),
+        "@p", CALCULATE ( AVERAGE ( FACT_Prices[price_pln] ), FACT_Prices[price_pln] <= 50000 ) )
+RETURN MAXX ( TOPN ( 1, FILTER ( t, [@p] <> BLANK() ), [@p], DESC ), DIM_Geography[country_name] )
+
+// liczba aktywnych okazji (marza > 20%) w biezacym kontekscie
+Aktywne okazje (>20%) =
+COUNTROWS (
+    FILTER ( VALUES ( DIM_Product[style_color] ), [Marza %] > 0.20 )
+)
+
+Max marza % =
+MAXX ( VALUES ( DIM_Product[style_color] ), [Marza %] )
+
+Max spread PLN =
+MAXX ( VALUES ( DIM_Product[style_color] ), [Spread PLN] )
+
+// ---------- KURSY (FX Dashboard) ----------
+Kurs mid (avg) = AVERAGE ( FACT_ExchangeRates[mid_rate] )
+Kurs bid (avg) = AVERAGE ( FACT_ExchangeRates[bid_rate] )
+Kurs ask (avg) = AVERAGE ( FACT_ExchangeRates[ask_rate] )
+Spread walutowy % =
+DIVIDE ( AVERAGE ( FACT_ExchangeRates[ask_rate] ) - AVERAGE ( FACT_ExchangeRates[bid_rate] ),
+         AVERAGE ( FACT_ExchangeRates[mid_rate] ) )
+
+Zmiennosc kursu (stdev) =
+CALCULATE ( STDEV.P ( FACT_ExchangeRates[mid_rate] ), FACT_ExchangeRates[table_type] = "A" )
+
+// ---------- FX: kurs biezacy vs 30 dni temu (per waluta, tabela A) ----------
+// (oparte o effective_date z FACT_ExchangeRates - odporne na slicer daty)
+Ostatnia data FX =
+CALCULATE ( MAX ( FACT_ExchangeRates[effective_date] ), FACT_ExchangeRates[table_type] = "A" )
+
+Kurs aktualny mid =
+CALCULATE ( AVERAGE ( FACT_ExchangeRates[mid_rate] ),
+            FACT_ExchangeRates[table_type] = "A",
+            FACT_ExchangeRates[effective_date] = [Ostatnia data FX] )
+
+Kurs 30D temu mid =
+VAR d = [Ostatnia data FX]
+VAR dPrev =
+    CALCULATE ( MAX ( FACT_ExchangeRates[effective_date] ),
+                FACT_ExchangeRates[effective_date] <= d - 30,
+                FACT_ExchangeRates[table_type] = "A" )
+RETURN
+    CALCULATE ( AVERAGE ( FACT_ExchangeRates[mid_rate] ),
+                FACT_ExchangeRates[effective_date] = dPrev,
+                FACT_ExchangeRates[table_type] = "A" )
+
+Zmiana kursu 30D % =
+DIVIDE ( [Kurs aktualny mid] - [Kurs 30D temu mid], [Kurs 30D temu mid] )
+
+Walut tab A =
+CALCULATE ( DISTINCTCOUNT ( FACT_ExchangeRates[currency_key] ), FACT_ExchangeRates[table_type] = "A" )
+
+// wspolczynnik zmiennosci (heatmapa: waluta x miesiac) = stdev/avg
+Wsp zmiennosci % =
+CALCULATE ( DIVIDE ( STDEV.P ( FACT_ExchangeRates[mid_rate] ), AVERAGE ( FACT_ExchangeRates[mid_rate] ) ),
+            FACT_ExchangeRates[table_type] = "A" )
+
+// ---------- Arbitraz: status pasma + waluta pod presja ----------
+Status arbitrazu =
+SWITCH ( TRUE (),
+    [Marza %] > 0.20,  "HIGH (>20%)",
+    [Marza %] >= 0.10, "MEDIUM (10-20%)",
+    "LOW (<10%)" )
+
+// dwie waluty z najwiekszym spadkiem 30D (do karty KPI)
+Waluta pod presja =
+VAR t =
+    ADDCOLUMNS (
+        FILTER ( VALUES ( DIM_Currency[currency_code] ), [Walut tab A] > 0 ),
+        "@d", [Zmiana kursu 30D %] )
+RETURN
+    CONCATENATEX ( TOPN ( 2, FILTER ( t, NOT ISBLANK ( [@d] ) ), [@d], ASC ),
+                   DIM_Currency[currency_code], " / ", [@d], ASC )

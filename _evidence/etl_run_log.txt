@@ -1,0 +1,5 @@
+Changed database context to 'NFX_DW'.
+run_id load_type rows_in fact_rows rows_rejected status sec
+------ --------- ------- --------- ------------- ------ ---
+1 INITIAL 183625 183607 18 SUCCESS 16
+2 INCREMENTAL 183625 183607 18 SUCCESS 12
